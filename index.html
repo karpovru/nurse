@@ -14,7 +14,7 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-20">
 
     <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-red-600 z-50 flex flex-col justify-center items-center text-center p-6 animate-pulse">
-        <h1 class="text-5xl font-black text-white mb-4">УВЕДОМЛЕНИЕ</h1>
+        <h1 class="text-5xl font-black text-white mb-4">🚨 ВЫЗОВ ДОКТОРА! 🚨</h1>
         <p id="alert-msg-text" class="text-2xl text-white font-bold bg-black bg-opacity-40 p-4 rounded-lg mb-8">Срочно в кабинет!</p>
         <button onclick="closeAlert()" class="bg-white text-red-600 px-8 py-3 rounded-full text-xl font-bold shadow-lg">ПРИНЯТО</button>
     </div>
@@ -71,30 +71,6 @@
 
             <button onclick="submitDocument()" class="w-full bg-teal-500 text-slate-900 font-bold py-3 rounded-xl shadow-lg active:bg-teal-600">Отправить Доктору</button>
         </section>
-        <section id="tab-printer" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">🖨️ Центр Печати</h2>
-
-            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                <h3 class="text-teal-400 font-bold mb-2">📄 Согласие на вмешательство</h3>
-                <label class="block text-sm text-slate-400 mb-1">Выберите пациента:</label>
-                <select id="consent-client-id" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white mb-3"></select>
-                <button onclick="printConsent()" class="w-full bg-blue-500 active:bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md">🖨️ Распечатать бланк согласия</button>
-            </div>
-
-            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                <h3 class="text-teal-400 font-bold mb-2">📷 Сканировать документ</h3>
-                <button onclick="startScanner()" class="w-full bg-slate-700 active:bg-slate-600 text-white font-bold py-2 rounded-lg shadow-md mb-3">Включить камеру</button>
-                <div id="reader" class="w-full bg-black rounded"></div>
-
-                <div id="scan-result" class="hidden mt-4 p-3 bg-slate-900 border border-teal-500 rounded-lg">
-                    <p class="text-sm text-white" id="res-body"></p>
-                    <div class="flex space-x-2 mt-3">
-                        <button onclick="printScannedDoc()" class="w-1/2 bg-teal-500 text-slate-900 font-bold py-2 rounded">🖨️ Печать</button>
-                        <button onclick="closeScanResult()" class="w-1/2 bg-slate-600 text-white py-2 rounded">Отмена</button>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <section id="tab-chat" class="tab-content space-y-4">
             <h2 class="text-lg font-bold border-b border-slate-700 pb-2">💬 Вызов Доктора</h2>
@@ -105,7 +81,6 @@
 
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around text-xs py-2">
         <button onclick="startScanner()" class="flex flex-col items-center text-slate-400"><span class="text-xl">📷</span><span>Скан</span></button>
-        <button onclick="switchTab('printer')" class="flex flex-col items-center text-teal-400 font-bold"><span class="text-xl">🖨️</span><span>Принтер</span></button>
         <button onclick="switchTab('create')" class="flex flex-col items-center text-teal-400 font-bold"><span class="text-xl">📄</span><span>Документ</span></button>
         <button onclick="switchTab('chat')" class="flex flex-col items-center text-slate-400"><span class="text-xl">💬</span><span>Связь</span></button>
     </nav>
@@ -117,83 +92,6 @@
         const WS_URL = `ws://${SERVER_HOST}:8000/ws/nurse`;
 
         let ws;
-
-        function printConsent() {
-            const select = document.getElementById('consent-client-id');
-            const clientName = select.options[select.selectedIndex].text;
-            const date = new Date().toLocaleDateString('ru-RU');
-
-            const content = `
-                <html><head><meta charset="utf-8"><style>body{font-family: sans-serif; padding: 40px; line-height: 1.6;} h2{text-align:center;}</style></head>
-                <body>
-                    <h2>ИНФОРМИРОВАННОЕ ДОБРОВОЛЬНОЕ СОГЛАСИЕ<br>на медицинское вмешательство</h2>
-                    <p>Я, <strong>${clientName}</strong>, в соответствии со ст. 20 Федерального закона "Об основах охраны здоровья граждан в РФ", даю добровольное согласие на проведение медицинского осмотра, сдачу анализов и выполнение процедур.</p>
-                    <p>Медицинским работником мне в доступной форме разъяснены цели, методы оказания медицинской помощи, связанный с ними риск и возможные последствия.</p>
-                    <br><br><br>
-                    <p>Дата: <strong>${date}</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Подпись пациента: ___________________</p>
-                    <script>window.onload = function() { window.print(); }
-            `;
-            // Открываем новую вкладку браузера на телефоне и сразу печатаем
-            const printWin = window.open('', '_blank');
-            printWin.document.write(content);
-            printWin.document.close();
-        }
-
-        // --- ЛОГИКА СКАНЕРА И ПЕЧАТИ ДОКУМЕНТА ---
-        let html5QrcodeScanner = null;
-        let currentScannedDoc = null; // Храним данные найденного документа
-
-        function startScanner() {
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 100} }, false);
-                html5QrcodeScanner.render(onScanSuccess, () => {});
-            }
-        }
-
-        async function onScanSuccess(decodedText) {
-            if(decodedText.length === 8) {
-                try {
-                    const res = await fetch(`${API_URL}/doc/${decodedText}`);
-                    if(res.ok) {
-                        currentScannedDoc = await res.json();
-                        document.getElementById('res-body').innerHTML = `
-                            <span class="text-teal-400 font-bold">Документ №${currentScannedDoc.doc_id}</span><br>
-                            <strong>Пациент:</strong> ${currentScannedDoc.client_name}<br>
-                            <strong>Тип:</strong> ${currentScannedDoc.type}<br>
-                        `;
-                        document.getElementById('scan-result').classList.remove('hidden');
-                        // Останавливаем сканер после успеха
-                        html5QrcodeScanner.clear();
-                        html5QrcodeScanner = null;
-                    } else {
-                        alert("Документ не найден!");
-                    }
-                } catch(e) { alert("Ошибка связи с сервером"); }
-            }
-        }
-
-        function printScannedDoc() {
-            if(!currentScannedDoc) return;
-            const doc = currentScannedDoc;
-            const content = `
-                <html><head><meta charset="utf-8"><style>body{font-family: sans-serif; padding: 40px;}</style></head>
-                <body>
-                    <h2>МЕДИЦИНСКИЙ ДОКУМЕНТ №${doc.doc_id}</h2><hr>
-                    <p><strong>Пациент:</strong> ${doc.client_name} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Дата:</strong> ${doc.date}</p>
-                    <p><strong>Обследование:</strong> ${doc.type} (${doc.subtype})</p>
-                    <p><strong>Ответственный:</strong> ${doc.author_name}</p>
-                    <br><h3>Заключение:</h3><p>${doc.content.replace(/\n/g, '<br>')}</p>
-                    <script>window.onload = function() { window.print(); }
-                </body></html>
-            `;
-            const printWin = window.open('', '_blank');
-            printWin.document.write(content);
-            printWin.document.close();
-        }
-
-        function closeScanResult() {
-            document.getElementById('scan-result').classList.add('hidden');
-            currentScannedDoc = null;
 
         function initWebSocket() {
             ws = new WebSocket(WS_URL);
@@ -243,8 +141,6 @@
 
         function onScanFailure(error) { /* Игнорируем ошибки во время поиска фокуса */ }
 
-        
-
         function closeScanResult() {
             document.getElementById('scan-result').classList.add('hidden');
         }
@@ -256,8 +152,6 @@
 
         function closeAlert() { document.getElementById('fullscreen-overlay').classList.add('hidden'); }
 
-        
-
         function sendAlertToDoctor(text) {
             ws.send(JSON.stringify({to: "doctor", message: text}));
             alert("Сигнал отправлен доктору!");
@@ -267,18 +161,12 @@
             try {
                 const res = await fetch(`${API_URL}/clients`);
                 const clients = await res.json();
-                
-                const selectDoc = document.getElementById('doc-client-id');
-                const selectConsent = document.getElementById('consent-client-id');
-                selectDoc.innerHTML = '';
-                selectConsent.innerHTML = '';
-                
+                const select = document.getElementById('doc-client-id');
+                select.innerHTML = '';
                 clients.forEach(c => {
-                    const opt = `<option value="${c.id}">${c.name}</option>`;
-                    selectDoc.innerHTML += opt;
-                    selectConsent.innerHTML += opt; // Добавляем и во вкладку принтера
+                    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
                 });
-            } catch (e) { console.error("Ошибка сети", e); }
+            } catch (e) { console.error("Ошибка загрузки клиентов", e); }
         }
 
         async function submitDocument() {
