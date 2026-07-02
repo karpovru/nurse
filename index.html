@@ -1,64 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Nurse Portal</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель Медсестры Мобильная</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        /* Полноэкранный алерт */
-        #overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 0, 0, 0.9); color: white; justify-content: center;
-            align-items: center; font-size: 3em; z-index: 1000; text-align: center;
-        }
+        /* Скрытие разделов по умолчанию */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-20">
 
-    <div id="overlay" onclick="this.style.display='none'">
-        <span id="alert-text">ВЫЗОВ!</span><br>
-        <small style="font-size: 0.3em;">(нажмите, чтобы закрыть)</small>
+    <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-red-600 z-50 flex flex-col justify-center items-center text-center p-6 animate-pulse">
+        <h1 class="text-5xl font-black text-white mb-4">🚨 ВЫЗОВ ДОКТОРА! 🚨</h1>
+        <p id="alert-msg-text" class="text-2xl text-white font-bold bg-black bg-opacity-40 p-4 rounded-lg mb-8">Срочно в кабинет!</p>
+        <button onclick="closeAlert()" class="bg-white text-red-600 px-8 py-3 rounded-full text-xl font-bold shadow-lg active:scale-95 transition">ПРИНЯТО</button>
     </div>
 
-    <h2>Создание записи</h2>
-    <input type="text" id="type" placeholder="Тип (Анализ/Опись)"><br><br>
-    <textarea id="content" rows="4" cols="50" placeholder="Результаты..."></textarea><br><br>
-    <button onclick="sendDoc()">Отправить Доктору</button>
+    <header class="bg-slate-800 p-4 border-b border-slate-700 shadow-md">
+        <h1 class="text-xl font-bold text-teal-400">Nurse Helper Mobile</h1>
+    </header>
 
-    <hr>
-    <h2>Связь с доктором</h2>
-    <input type="text" id="msg" placeholder="Сообщение доктору">
-    <button onclick="sendDoctorMsg()">Отправить</button>
+    <main class="p-4">
+        <section id="tab-create" class="tab-content active space-y-4">
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">📋 Оформление документа / Анализа</h2>
+            
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Выбрать Клиента (ID)</label>
+                <select id="doc-client-id" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-teal-400">
+                    </select>
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Тип документа</label>
+                <select id="doc-type" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white">
+                    <option value="Результаты анализов">Результаты анализов</option>
+                    <option value="Опись состояния">Опись состояния пациента</option>
+                    <option value="Справка на работу">Справка на работу</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Медицинское заключение / Результат</label>
+                <textarea id="doc-content" rows="5" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-teal-400" placeholder="Опишите симптомы, жалобы или результаты анализов..."></textarea>
+            </div>
+
+            <button onclick="submitDocument()" class="w-full bg-teal-500 text-slate-900 font-bold py-3 rounded-xl shadow-lg active:bg-teal-600">Направить Доктору на проверку</button>
+        </section>
+
+        <section id="tab-clients" class="tab-content space-y-3">
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">👥 База клиентов</h2>
+            <div id="clients-container" class="space-y-2">
+                </div>
+        </section>
+
+        <section id="tab-chat" class="tab-content space-y-4">
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">💬 Экстренная связь с Доктором</h2>
+            <button onclick="sendAlertToDoctor('Срочно зайдите в процедурный кабинет!')" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-md">🚨 Вызвать Доктора (Процедурный)</button>
+            <button onclick="sendAlertToDoctor('Клиенту стало плохо!')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-md">⚠️ Доктор, клиенту плохо!</button>
+        </section>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around text-xs py-2">
+        <button onclick="switchTab('create')" class="flex flex-col items-center text-teal-400 font-bold">
+            <span class="text-xl">📄</span>
+            <span>Документ</span>
+        </button>
+        <button onclick="switchTab('clients')" class="flex flex-col items-center text-slate-400">
+            <span class="text-xl">👥</span>
+            <span>Клиенты</span>
+        </button>
+        <button onclick="switchTab('chat')" class="flex flex-col items-center text-slate-400">
+            <span class="text-xl">💬</span>
+            <span>Связь</span>
+        </button>
+    </nav>
 
     <script>
-        const ws = new WebSocket("ws://127.0.0.1:8000/ws");
+        // === НАСТРОЙКА АДРЕСА СЕРВЕРА ===
+        // Замени на IP-адрес компьютера, где запущен server.py, чтобы телефон его увидел!
+        const SERVER_HOST = "127.0.0.1"; 
+        const API_URL = `http://${SERVER_HOST}:8000`;
+        const WS_URL = `ws://${SERVER_HOST}:8000/ws/nurse`;
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.to === 'nurse') {
-                document.getElementById('alert-text').innerText = data.message;
-                document.getElementById('overlay').style.display = 'flex';
-            }
-        };
+        let ws;
 
-        function sendDoctorMsg() {
-            const text = document.getElementById('msg').value;
-            ws.send(JSON.stringify({to: 'doctor', message: text}));
+        // Инициализация WebSocket
+        function initWebSocket() {
+            ws = new WebSocket(WS_URL);
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === "fullscreen_alert") {
+                    document.getElementById('alert-msg-text').innerText = data.message;
+                    document.getElementById('fullscreen-overlay').classList.remove('hidden');
+                }
+            };
+            ws.onclose = function() { setTimeout(initWebSocket, 3000); }; // Автореконнект
         }
 
-        async function sendDoc() {
-            const type = document.getElementById('type').value;
-            const content = document.getElementById('content').value;
-            
-            const response = await fetch("http://127.0.0.1:8000/create_doc", {
+        // Переключение вкладок на мобилке
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        function closeAlert() {
+            document.getElementById('fullscreen-overlay').classList.add('hidden');
+        }
+
+        function sendAlertToDoctor(text) {
+            ws.send(JSON.stringify({to: "doctor", message: text}));
+            alert("Сигнал отправлен на экран доктора!");
+        }
+
+        // Загрузка клиентов
+        async function loadClientsData() {
+            try {
+                const res = await fetch(`${API_URL}/clients`);
+                const clients = await res.json();
+                
+                const select = document.getElementById('doc-client-id');
+                const container = document.getElementById('clients-container');
+                
+                select.innerHTML = '';
+                container.innerHTML = '';
+
+                clients.forEach(c => {
+                    // Наполняем выпадающий список
+                    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                    // Наполняем вкладку Клиенты
+                    container.innerHTML += `
+                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <div class="font-bold text-teal-400">${c.name}</div>
+                            <div class="text-sm text-slate-400">ДР: ${c.dob} | Кровь: ${c.blood_type}</div>
+                            <div class="text-xs text-slate-300 mt-1 italic">Диагноз: ${c.diagnosis}</div>
+                        </div>`;
+                });
+            } catch (e) { console.error("Ошибка сети", e); }
+        }
+
+        // Отправка формы документа доктору
+        async function submitDocument() {
+            const clientId = document.getElementById('doc-client-id').value;
+            const type = document.getElementById('doc-type').value;
+            const content = document.getElementById('doc-content').value;
+
+            if(!content) return alert("Заполните содержимое документа!");
+
+            const res = await fetch(`${API_URL}/create_doc`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({type: type, content: content})
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({client_id: parseInt(clientId), type: type, content: content})
             });
-            const data = await response.json();
-            alert("Документ создан! ID: " + data.doc_id);
-            // Уведомляем доктора, что есть новый документ
-            ws.send(JSON.stringify({to: 'doctor', message: "Новый документ: " + data.doc_id}));
+            const data = await res.json();
+            alert(`Документ успешно сформирован!\nЕму присвоен 8-значный номер: ${data.doc_id}`);
+            document.getElementById('doc-content').value = '';
         }
+
+        // Запуск
+        initWebSocket();
+        loadClientsData();
     </script>
 </body>
 </html>
