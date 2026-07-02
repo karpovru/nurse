@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель Медсестры Мобильная</title>
+    <title>Панель Медсестры</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Скрытие разделов по умолчанию */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
     </style>
@@ -16,7 +15,7 @@
     <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-red-600 z-50 flex flex-col justify-center items-center text-center p-6 animate-pulse">
         <h1 class="text-5xl font-black text-white mb-4">🚨 ВЫЗОВ ДОКТОРА! 🚨</h1>
         <p id="alert-msg-text" class="text-2xl text-white font-bold bg-black bg-opacity-40 p-4 rounded-lg mb-8">Срочно в кабинет!</p>
-        <button onclick="closeAlert()" class="bg-white text-red-600 px-8 py-3 rounded-full text-xl font-bold shadow-lg active:scale-95 transition">ПРИНЯТО</button>
+        <button onclick="closeAlert()" class="bg-white text-red-600 px-8 py-3 rounded-full text-xl font-bold shadow-lg">ПРИНЯТО</button>
     </div>
 
     <header class="bg-slate-800 p-4 border-b border-slate-700 shadow-md">
@@ -25,69 +24,63 @@
 
     <main class="p-4">
         <section id="tab-create" class="tab-content active space-y-4">
-            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">📋 Оформление документа / Анализа</h2>
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">📋 Оформление результата</h2>
             
             <div>
-                <label class="block text-sm text-slate-400 mb-1">Выбрать Клиента (ID)</label>
-                <select id="doc-client-id" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-teal-400">
+                <label class="block text-sm text-slate-400 mb-1">Имя Медсестры (Кто заполняет)</label>
+                <input type="text" id="nurse-name" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white" placeholder="Иванова М.С.">
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Выбрать Пациента (ID)</label>
+                <select id="doc-client-id" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white"></select>
+            </div>
+
+            <div class="flex space-x-2">
+                <div class="w-1/2">
+                    <label class="block text-sm text-slate-400 mb-1">Категория</label>
+                    <select id="doc-type" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white">
+                        <option value="Результаты анализов">Анализы</option>
+                        <option value="Опись состояния">Опись состояния</option>
                     </select>
-            </div>
-
-            <div>
-                <label class="block text-sm text-slate-400 mb-1">Тип документа</label>
-                <select id="doc-type" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white">
-                    <option value="Результаты анализов">Результаты анализов</option>
-                    <option value="Опись состояния">Опись состояния пациента</option>
-                    <option value="Справка на работу">Справка на работу</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm text-slate-400 mb-1">Медицинское заключение / Результат</label>
-                <textarea id="doc-content" rows="5" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-teal-400" placeholder="Опишите симптомы, жалобы или результаты анализов..."></textarea>
-            </div>
-
-            <button onclick="submitDocument()" class="w-full bg-teal-500 text-slate-900 font-bold py-3 rounded-xl shadow-lg active:bg-teal-600">Направить Доктору на проверку</button>
-        </section>
-
-        <section id="tab-clients" class="tab-content space-y-3">
-            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">👥 База клиентов</h2>
-            <div id="clients-container" class="space-y-2">
                 </div>
+                <div class="w-1/2">
+                    <label class="block text-sm text-slate-400 mb-1">Подтип</label>
+                    <select id="doc-subtype" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white">
+                        <option value="Первичное">Первичное</option>
+                        <option value="Вторичное">Вторичное</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Результат / Описание</label>
+                <textarea id="doc-content" rows="5" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white" placeholder="Жалобы, температура, давление..."></textarea>
+            </div>
+
+            <button onclick="submitDocument()" class="w-full bg-teal-500 text-slate-900 font-bold py-3 rounded-xl shadow-lg active:bg-teal-600">Отправить Доктору</button>
         </section>
 
         <section id="tab-chat" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">💬 Экстренная связь с Доктором</h2>
-            <button onclick="sendAlertToDoctor('Срочно зайдите в процедурный кабинет!')" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-md">🚨 Вызвать Доктора (Процедурный)</button>
-            <button onclick="sendAlertToDoctor('Клиенту стало плохо!')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-md">⚠️ Доктор, клиенту плохо!</button>
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">💬 Вызов Доктора</h2>
+            <button onclick="sendAlertToDoctor('Срочно зайдите в процедурный кабинет!')" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl shadow-md">🚨 Процедурный кабинет</button>
+            <button onclick="sendAlertToDoctor('Клиенту стало плохо в коридоре!')" class="w-full bg-orange-500 text-white font-bold py-4 rounded-xl shadow-md">⚠️ Пациенту плохо!</button>
         </section>
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around text-xs py-2">
-        <button onclick="switchTab('create')" class="flex flex-col items-center text-teal-400 font-bold">
-            <span class="text-xl">📄</span>
-            <span>Документ</span>
-        </button>
-        <button onclick="switchTab('clients')" class="flex flex-col items-center text-slate-400">
-            <span class="text-xl">👥</span>
-            <span>Клиенты</span>
-        </button>
-        <button onclick="switchTab('chat')" class="flex flex-col items-center text-slate-400">
-            <span class="text-xl">💬</span>
-            <span>Связь</span>
-        </button>
+        <button onclick="switchTab('create')" class="flex flex-col items-center text-teal-400 font-bold"><span class="text-xl">📄</span><span>Документ</span></button>
+        <button onclick="switchTab('chat')" class="flex flex-col items-center text-slate-400"><span class="text-xl">💬</span><span>Связь</span></button>
     </nav>
 
     <script>
-        // === НАСТРОЙКА АДРЕСА СЕРВЕРА ===
-        // Замени на IP-адрес компьютера, где запущен server.py, чтобы телефон его увидел!
-        const SERVER_HOST = "127.0.0.1"; 
+        // === ВПИШИ СЮДА СВОЙ IP ===
+        const SERVER_HOST = "192.168.1.45"; 
         const API_URL = `http://${SERVER_HOST}:8000`;
         const WS_URL = `ws://${SERVER_HOST}:8000/ws/nurse`;
 
         let ws;
 
-        // Инициализация WebSocket
         function initWebSocket() {
             ws = new WebSocket(WS_URL);
             ws.onmessage = function(event) {
@@ -97,69 +90,65 @@
                     document.getElementById('fullscreen-overlay').classList.remove('hidden');
                 }
             };
-            ws.onclose = function() { setTimeout(initWebSocket, 3000); }; // Автореконнект
+            ws.onclose = function() { setTimeout(initWebSocket, 3000); };
         }
 
-        // Переключение вкладок на мобилке
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
         }
 
-        function closeAlert() {
-            document.getElementById('fullscreen-overlay').classList.add('hidden');
-        }
+        function closeAlert() { document.getElementById('fullscreen-overlay').classList.add('hidden'); }
 
         function sendAlertToDoctor(text) {
             ws.send(JSON.stringify({to: "doctor", message: text}));
-            alert("Сигнал отправлен на экран доктора!");
+            alert("Сигнал отправлен доктору!");
         }
 
-        // Загрузка клиентов
         async function loadClientsData() {
             try {
                 const res = await fetch(`${API_URL}/clients`);
                 const clients = await res.json();
-                
                 const select = document.getElementById('doc-client-id');
-                const container = document.getElementById('clients-container');
-                
                 select.innerHTML = '';
-                container.innerHTML = '';
-
                 clients.forEach(c => {
-                    // Наполняем выпадающий список
                     select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-                    // Наполняем вкладку Клиенты
-                    container.innerHTML += `
-                        <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                            <div class="font-bold text-teal-400">${c.name}</div>
-                            <div class="text-sm text-slate-400">ДР: ${c.dob} | Кровь: ${c.blood_type}</div>
-                            <div class="text-xs text-slate-300 mt-1 italic">Диагноз: ${c.diagnosis}</div>
-                        </div>`;
                 });
-            } catch (e) { console.error("Ошибка сети", e); }
+            } catch (e) { console.error("Ошибка загрузки клиентов", e); }
         }
 
-        // Отправка формы документа доктору
         async function submitDocument() {
+            const nurseName = document.getElementById('nurse-name').value || "Медсестра (без имени)";
             const clientId = document.getElementById('doc-client-id').value;
             const type = document.getElementById('doc-type').value;
+            const subtype = document.getElementById('doc-subtype').value;
             const content = document.getElementById('doc-content').value;
 
+            // Получаем сегодняшнюю дату в формате ДД.ММ.ГГГГ
+            const today = new Date().toLocaleDateString('ru-RU');
+
             if(!content) return alert("Заполните содержимое документа!");
+
+            const payload = {
+                client_id: parseInt(clientId),
+                type: type,
+                subtype: subtype,
+                date: today,
+                content: content,
+                author_name: nurseName,
+                author_role: "nurse"
+            };
 
             const res = await fetch(`${API_URL}/create_doc`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({client_id: parseInt(clientId), type: type, content: content})
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
-            alert(`Документ успешно сформирован!\nЕму присвоен 8-значный номер: ${data.doc_id}`);
+            alert(`Успешно! Документу присвоен номер: ${data.doc_id}`);
             document.getElementById('doc-content').value = '';
         }
 
-        // Запуск
         initWebSocket();
         loadClientsData();
     </script>
