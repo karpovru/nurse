@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель Медсестры</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -23,6 +24,16 @@
     </header>
 
     <main class="p-4">
+        <section id="tab-scanner" class="tab-content space-y-4">
+            <h2 class="text-lg font-bold border-b border-slate-700 pb-2">📷 Сканер штрих-кодов</h2>
+            <div id="reader" class="w-full bg-slate-800 rounded"></div>
+            
+            <div id="scan-result" class="hidden mt-4 p-4 bg-slate-800 border border-teal-500 rounded-lg">
+                <h3 class="text-teal-400 font-bold mb-2" id="res-title">Документ Найден!</h3>
+                <p class="text-sm text-white" id="res-body"></p>
+                <button onclick="closeScanResult()" class="mt-4 w-full bg-slate-600 text-white py-2 rounded">Очистить</button>
+            </div>
+        </section>
         <section id="tab-create" class="tab-content active space-y-4">
             <h2 class="text-lg font-bold border-b border-slate-700 pb-2">📋 Оформление результата</h2>
             
@@ -69,6 +80,7 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around text-xs py-2">
+        <button onclick="startScanner()" class="flex flex-col items-center text-slate-400"><span class="text-xl">📷</span><span>Скан</span></button>
         <button onclick="switchTab('create')" class="flex flex-col items-center text-teal-400 font-bold"><span class="text-xl">📄</span><span>Документ</span></button>
         <button onclick="switchTab('chat')" class="flex flex-col items-center text-slate-400"><span class="text-xl">💬</span><span>Связь</span></button>
     </nav>
@@ -93,6 +105,46 @@
             ws.onclose = function() { setTimeout(initWebSocket, 3000); };
         }
 
+        let html5QrcodeScanner = null;
+
+        function startScanner() {
+            switchTab('scanner');
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", { fps: 10, qrbox: {width: 250, height: 100} }, false);
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            }
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            // Если отсканировали 8 цифр
+            if(decodedText.length === 8) {
+                try {
+                    const res = await fetch(`${API_URL}/doc/${decodedText}`);
+                    if(res.ok) {
+                        const doc = await res.json();
+                        document.getElementById('res-body').innerHTML = `
+                            <strong>Номер:</strong> ${doc.doc_id}<br>
+                            <strong>Пациент:</strong> ${doc.client_name}<br>
+                            <strong>Статус:</strong> ${doc.status}<br><br>
+                            <strong>Описание:</strong> ${doc.content}
+                        `;
+                        document.getElementById('scan-result').classList.remove('hidden');
+                    } else {
+                        alert("Документ не найден в базе!");
+                    }
+                } catch(e) {
+                    alert("Ошибка связи с сервером");
+                }
+            }
+        }
+
+        function onScanFailure(error) { /* Игнорируем ошибки во время поиска фокуса */ }
+
+        function closeScanResult() {
+            document.getElementById('scan-result').classList.add('hidden');
+        }
+        
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
